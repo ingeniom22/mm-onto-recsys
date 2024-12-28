@@ -40,8 +40,10 @@ function TextFilePreview({ file }: { file: File }) {
 }
 
 export default function Home() {
-  const { messages, input, handleSubmit, handleInputChange, isLoading } =
+  const { messages, input, handleSubmit, handleInputChange, isLoading} =
     useChat({
+      api: 'api/chat',
+      maxSteps: 2,
       onError: () =>
         toast.error("You've been rate limited, please try again later!"),
     });
@@ -153,7 +155,7 @@ export default function Home() {
       <AnimatePresence>
         {isDragging && (
           <motion.div
-            className="fixed pointer-events-none dark:bg-zinc-900/90 h-dvh w-dvw z-10 flex flex-row justify-center items-center flex flex-col gap-1 bg-zinc-100/90"
+            className="fixed pointer-events-none dark:bg-zinc-900/90 h-dvh w-dvw z-10 justify-center items-center flex flex-col gap-1 bg-zinc-100/90"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -169,41 +171,47 @@ export default function Home() {
       <div className="flex flex-col justify-between gap-4">
         {messages.length > 0 ? (
           <div className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll">
-            {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                className={`flex flex-row gap-2 px-4 w-full md:w-[500px] md:px-0 ${index === 0 ? "pt-20" : ""
-                  }`}
-                initial={{ y: 5, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-              >
-                <div className="size-[24px] flex flex-col justify-center items-center flex-shrink-0 text-zinc-400">
-                  {message.role === "assistant" ? <BotIcon /> : <UserIcon />}
-                </div>
+            {messages
+              .filter(
+                (message) =>
+                  message.content.length > 0 &&
+                  (message.role === "assistant" || message.role === "user")
+              )
+              .map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  className={`flex flex-row gap-2 px-4 w-full md:w-[500px] md:px-0 ${index === 0 ? "pt-20" : ""
+                    }`}
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                >
+                  <div className="size-[24px] flex flex-col justify-center items-center flex-shrink-0 text-zinc-400">
+                    {message.role === "assistant" ? <BotIcon /> : <UserIcon />}
+                  </div>
 
-                <div className="flex flex-col gap-1">
-                  <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
-                    <Markdown>{message.content}</Markdown>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
+                      <Markdown>{message.content}</Markdown>
+                    </div>
+                    <div className="flex flex-row gap-2">
+                      {message.experimental_attachments?.map((attachment) =>
+                        attachment.contentType?.startsWith("image") ? (
+                          <img
+                            className="rounded-md w-40 mb-3"
+                            key={attachment.name}
+                            src={attachment.url}
+                            alt={attachment.name}
+                          />
+                        ) : attachment.contentType?.startsWith("text") ? (
+                          <div className="text-xs w-40 h-24 overflow-hidden text-zinc-400 border p-2 rounded-md dark:bg-zinc-800 dark:border-zinc-700 mb-3">
+                            {getTextFromDataUrl(attachment.url)}
+                          </div>
+                        ) : null
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-row gap-2">
-                    {message.experimental_attachments?.map((attachment) =>
-                      attachment.contentType?.startsWith("image") ? (
-                        <img
-                          className="rounded-md w-40 mb-3"
-                          key={attachment.name}
-                          src={attachment.url}
-                          alt={attachment.name}
-                        />
-                      ) : attachment.contentType?.startsWith("text") ? (
-                        <div className="text-xs w-40 h-24 overflow-hidden text-zinc-400 border p-2 rounded-md dark:bg-zinc-800 dark:border-zinc-700 mb-3">
-                          {getTextFromDataUrl(attachment.url)}
-                        </div>
-                      ) : null
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
 
             {isLoading &&
               messages[messages.length - 1].role !== "assistant" && (
