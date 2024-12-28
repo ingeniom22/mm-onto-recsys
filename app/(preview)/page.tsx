@@ -43,7 +43,7 @@ export default function Home() {
   const { messages, input, handleSubmit, handleInputChange, isLoading} =
     useChat({
       api: 'api/chat',
-      maxSteps: 2,
+      // maxSteps: 2,
       onError: () =>
         toast.error("You've been rate limited, please try again later!"),
     });
