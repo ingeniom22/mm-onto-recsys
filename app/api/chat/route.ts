@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 import { openai } from "@ai-sdk/openai";
 import { ToolInvocation, convertToCoreMessages, streamText, generateText } from "ai";
 
