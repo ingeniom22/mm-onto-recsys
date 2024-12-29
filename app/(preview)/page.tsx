@@ -40,10 +40,10 @@ function TextFilePreview({ file }: { file: File }) {
 }
 
 export default function Home() {
-  const { messages, input, handleSubmit, handleInputChange, isLoading} =
+  const { messages, input, handleSubmit, handleInputChange, isLoading } =
     useChat({
       api: 'api/chat',
-      // maxSteps: 2,
+      maxSteps: 2,
       onError: () =>
         toast.error("You've been rate limited, please try again later!"),
     });
@@ -172,11 +172,6 @@ export default function Home() {
         {messages.length > 0 ? (
           <div className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll">
             {messages
-              .filter(
-                (message) =>
-                  message.content.length > 0 &&
-                  (message.role === "assistant" || message.role === "user")
-              )
               .map((message, index) => (
                 <motion.div
                   key={message.id}
@@ -191,7 +186,8 @@ export default function Home() {
 
                   <div className="flex flex-col gap-1">
                     <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
-                      <Markdown>{message.content}</Markdown>
+                      {/* <Markdown>{message.content}</Markdown> */}
+                      {message.content.length === 0 && message.toolInvocations != undefined ? (<Markdown>{`Mencari informasi dengan ${message.toolInvocations[0].toolName}`}</Markdown>) : <Markdown>{message.content}</Markdown>}
                     </div>
                     <div className="flex flex-row gap-2">
                       {message.experimental_attachments?.map((attachment) =>

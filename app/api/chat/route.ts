@@ -9,25 +9,25 @@ interface Message {
 }
 
 
-// const weatherSchema = z.object({
-//   city: z.string().describe('The city to get the weather for'),
-//   unit: z.enum(['C', 'F']).describe('The unit to display the temperature in'),
-// });
+const weatherSchema = z.object({
+  city: z.string().describe('The city to get the weather for'),
+  unit: z.enum(['C', 'F']).describe('The unit to display the temperature in'),
+});
 
-// type WeatherParams = z.infer<typeof weatherSchema>;
+type WeatherParams = z.infer<typeof weatherSchema>;
 
-// const getWeather = {
-//   description: 'Get the weather for a location',
-//   parameters: weatherSchema,
-//   execute: async ({ city, unit }: WeatherParams) => {
-//     const weather = {
-//       value: 24,
-//       description: 'Sunny',
-//     };
+const getWeather = {
+  description: 'Get the weather for a location',
+  parameters: weatherSchema,
+  execute: async ({ city, unit }: WeatherParams) => {
+    const weather = {
+      value: 24,
+      description: 'Sunny',
+    };
 
-//     return `It is currently ${weather.value}°${unit} and ${weather.description} in ${city}!`;
-//   },
-// };
+    return `It is currently ${weather.value}°${unit} and ${weather.description} in ${city}!`;
+  },
+};
 
 
 async function fetchColqwenImages(query: string) {
@@ -80,7 +80,7 @@ type RAGParams = z.infer<typeof RAGSchema>;
 
 
 const getRAG = {
-  description: 'Mendapatkan informasi tambahan dari dokumen e-lkpp.go.id',
+  description: 'Mendapatkan informasi tambahan dari dokumen e-lkpp.go.id, gunakan informasi tersebut untuk menjawab pertanyaan user',
   parameters: RAGSchema,
   execute: async ({ query }: RAGParams) => {
     const data = await fetchColqwenImages(query)
@@ -99,6 +99,7 @@ const getRAG = {
 
     const result = await generateText({
       model: openai("gpt-4o-mini",),
+      system: "Answer user question based on the images given, if information doesnt exists in images, simply say you dont know",
       messages: [
         {
           role: 'user',
@@ -108,7 +109,7 @@ const getRAG = {
     });
 
     const { text } = result
-    // console.log(result)
+    console.log(text)
     return text
     // return result.text
   },
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
       `,
     messages: convertToCoreMessages(messages),
 
-    tools: { getRAG },
+    tools: { getRAG, getWeather },
   });
 
   return result.toDataStreamResponse();
