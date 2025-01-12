@@ -2,6 +2,9 @@ import { z } from "zod";
 import { openai } from "@ai-sdk/openai";
 import { ToolInvocation, convertToCoreMessages, streamText, generateText } from "ai";
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -71,6 +74,45 @@ async function fetchColqwenImages(query: string) {
 }
 
 
+async function fetchKG(query: string) {
+  const url = process.env.OAI_TOOLS_URL as string; // Load URL from environment variables
+  // const apiKey = process.env.RUNPOD_COLQWEN_API_KEY as string; // Load API key from environment variables
+
+  if (!url) {
+    throw new Error("OAI_TOOLS_URL is not defined in environment variables.");
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  // const helper_prompt = 
+
+  const body = {
+    query: query,
+  };
+
+  try {
+    const response = await fetch(url + "/query-kg", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Response Data:", data);
+
+    return data;
+  } catch (error) {
+    console.error("Fetch error:", error);
+    throw error;
+  }
+}
+
 const RAGSchema = z.object({
   query: z.string().describe('User query'),
 });
@@ -116,6 +158,20 @@ const getRAG = {
 };
 
 
+const getKG = {
+  description: `Mendapatkan informasi tambahan dari knowledge graph, gunakan informasi tersebut untuk menjawab pertanyaan user
+  mengenai pendefinisian dari europa`,
+  parameters: RAGSchema,
+  execute: async ({ query }: RAGParams) => {
+    const data = await fetchKG(query)
+
+    const { result } = data
+    console.log(result)
+    return result
+    // return result.text
+  },
+}
+
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json();
 
@@ -126,7 +182,7 @@ export async function POST(req: Request) {
       `,
     messages: convertToCoreMessages(messages),
 
-    tools: { getRAG, getWeather },
+    tools: { getRAG, getWeather, getKG },
   });
 
   return result.toDataStreamResponse();
