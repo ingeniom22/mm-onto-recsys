@@ -113,6 +113,45 @@ async function fetchKG(query: string) {
   }
 }
 
+
+async function fetchEKatalog(query: string) {
+  const url = process.env.OAI_TOOLS_URL as string; // Load URL from environment variables
+
+  if (!url) {
+    throw new Error("OAI_TOOLS_URL is not defined in environment variables.");
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  // const helper_prompt = 
+
+  const body = {
+    query: query,
+  };
+
+  try {
+    const response = await fetch(url + "/search-ekatalog", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Response Data:", data);
+
+    return data;
+  } catch (error) {
+    console.error("Fetch error:", error);
+    throw error;
+  }
+}
+
 const RAGSchema = z.object({
   query: z.string().describe('User query'),
 });
@@ -172,6 +211,20 @@ const getKG = {
   },
 }
 
+const searchEKatalog = {
+  description: `Mendapatkan informasi tambahan dari website https://e-katalog.lkpp.go.id/,
+  //  gunakan informasi tersebut untuk menjawab pertanyaan user mengenai produk di e-katalog`,
+  parameters: RAGSchema,
+  execute: async ({ query }: RAGParams) => {
+    const data = await fetchEKatalog(query)
+
+    // const { result } = data
+    console.log(data)
+    return data
+    // return result.text
+  },
+}
+
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json();
 
@@ -182,7 +235,7 @@ export async function POST(req: Request) {
       `,
     messages: convertToCoreMessages(messages),
 
-    tools: { getRAG, getWeather, getKG },
+    tools: { getRAG, getWeather, getKG, searchEKatalog },
   });
 
   return result.toDataStreamResponse();
